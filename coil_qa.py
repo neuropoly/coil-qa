@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
+from utils.utils import array_stats_matrix
 # Add paths to custom functions (not necessary in Python, assuming functions are available)
 # Custom function placeholders:
 # read_meas_dat, mrir_ice_dimensions, mrir_array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss, mrir_array_SNR_rss
@@ -42,17 +43,20 @@ def main():
     elif vendor == 'ge':
         sys.path.append('/Users/julien/code/orchestra-sdk-2.1-1')  # https://github.com/neuropoly/coil-qa/issues/2
         from GERecon import Pfile
-        pfile = Pfile(fname_image)
-        acquiredData = Cartesian2DAcquiredData(archive)
         # Read GE 'p-file' data
+        pfile = Pfile(fname_image)
+        metadata = pfile.MetaData()
+        meas_image = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
+        pfile = Pfile(fname_noise)
+        meas_noise = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
         pass
 
     # # Display dimensions of image and noise data
     # mrir_ice_dimensions(meas_image['data'])
     # mrir_ice_dimensions(meas_noise['data'])
 
-    # # Step 1a: Calculate channel noise correlation coefficient matrix
-    # noisecof = mrir_array_stats_matrix(meas_noise['data'], 'cof')
+    # Calculate channel noise correlation coefficient matrix
+    noisecof = array_stats_matrix(meas_noise, 'cof')
 
     # # Calculate average off-diagonal coupling
     # mask = np.tril(np.ones(noisecof.shape), -1) > 0
