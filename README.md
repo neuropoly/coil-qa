@@ -8,5 +8,6 @@ Useful resources:
 
 Environment: GE orchestra requires numpy<2, so create a venv using these commands:
 ~~~
-conda create -n venv python=3.10 numpy=1.25 matplotlib
+python -m venv venv
+pip install numpy==1.25 matplotlib
 ~~~
