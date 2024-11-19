@@ -1,5 +1,73 @@
+# This file contains utility functions for data processing and visualization.
+# A lot of these functions were originally written by Jon Polimeni and converted to Python by Julien Cohen-Adad.
 
 import numpy as np
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def compute_noise_bandwidth(noise, display=False):
+    """
+    Calculate noise spectrum and return effective noise bandwidth.
+    
+    Parameters:
+    - noise: ndarray
+        Input noise data array. Assumes channels are stored in the third dimension.
+    - display: bool, optional
+        Whether to display the noise power spectrum plot (default: False).
+    
+    Returns:
+    - noise_bandwidth: float
+        Effective noise bandwidth.
+    - noise_bandwidth_chan: ndarray
+        Noise bandwidth for each channel.
+    - N_power_spectrum_avg: ndarray
+        Average noise power spectrum.
+    """
+    # Ensure dimensions are handled correctly
+    dims = list(noise.shape)
+    while len(dims) < 16:
+        dims.append(1)
+
+    # Reshape to samples x channels
+    noise = np.transpose(noise, axes=list(range(len(dims) - 1)) + [len(dims) - 1])
+    noise = noise.reshape(-1, dims[2])
+
+    # Compute FFT
+    N = np.fft.fft(noise.reshape(dims[0], -1, dims[2]), axis=0) / np.sqrt(dims[0])
+    N_power_spectrum = np.abs(N) ** 2
+
+    # Channel-wise power spectrum
+    N_power_spectrum_chan = np.mean(N_power_spectrum, axis=1)
+    N_power_spectrum_chan_normalized = N_power_spectrum_chan / N_power_spectrum_chan[0, :]
+    noise_bandwidth_chan = np.mean(N_power_spectrum_chan_normalized, axis=0)
+
+    # Average power spectrum
+    N_power_spectrum_avg = np.mean(N_power_spectrum_chan, axis=1)
+    N_power_spectrum_avg_normalized = N_power_spectrum_avg / N_power_spectrum_avg[0]
+    noise_bandwidth = np.mean(N_power_spectrum_avg_normalized)
+
+    # Display plot if required
+    if display:
+        plt.figure()
+        plt.gca().add_patch(plt.Rectangle((0.25 * dims[0], 0.001), 0.5 * dims[0], 1.098, 
+                                          facecolor='0.9', linestyle='none'))
+        plt.plot(np.fft.fftshift(N_power_spectrum_avg_normalized))
+        plt.xticks(
+            [0, dims[0] * 0.25, dims[0] * 0.5, dims[0] * 0.75, dims[0]],
+            [-0.5, -0.25, 0, 0.25, 0.5]
+        )
+        plt.xlim([0, dims[0]])
+        plt.ylim([0, 1.1])
+        plt.grid(axis='y')
+        plt.xlabel('Frequency (normalized)')
+        plt.ylabel('Power (DC normalized)')
+        plt.title(f'Average of normalized noise power spectrum, BW={noise_bandwidth:.3f}')
+        plt.box(on=True)
+        plt.show()
+
+    return noise_bandwidth, noise_bandwidth_chan, N_power_spectrum_avg
+
 
 def array_stats_matrix(rawdata, stat_type='cov', do_noise_bw_scaling=False):
     """
@@ -30,7 +98,7 @@ def array_stats_matrix(rawdata, stat_type='cov', do_noise_bw_scaling=False):
     noise = rawdata.astype(np.float64)
 
     if do_noise_bw_scaling:
-        noise_bandwidth = mrir_noise_bandwidth(noise)
+        noise_bandwidth = compute_noise_bandwidth(noise)
         if noise_bandwidth < 0.6:
             print("Warning: Noise bandwidth is too low; data may not be pure noise.")
 
