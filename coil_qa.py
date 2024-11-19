@@ -58,17 +58,17 @@ def main():
     # Calculate channel noise correlation coefficient matrix
     noisecof = array_stats_matrix(meas_noise, 'cof')
 
-    # # Calculate average off-diagonal coupling
-    # mask = np.tril(np.ones(noisecof.shape), -1) > 0
-    # noisecof_avg = np.mean(np.abs(noisecof[mask]))
+    # Calculate average off-diagonal coupling
+    mask = np.tril(np.ones(noisecof.shape), -1) > 0
+    noisecof_avg = np.mean(np.abs(noisecof[mask]))
 
-    # print(f' ==> average off-diagonal coupling: {noisecof_avg * 100:.2f}%')
+    print(f' ==> average off-diagonal coupling: {noisecof_avg * 100:.2f}%')
 
-    # # Display noise correlation matrix
-    # plt.imshow(noisecof, cmap='hot', interpolation='nearest')
-    # plt.colorbar()
-    # plt.title('Noise Correlation Matrix')
-    # plt.show()
+    # Display noise correlation matrix
+    plt.imshow(noisecof, cmap='hot', interpolation='nearest')
+    plt.colorbar()
+    plt.title('Noise Correlation Matrix')
+    plt.show()
 
     # # Step 1b: Calculate channel noise covariance matrix
     # noisecov = mrir_array_stats_matrix(meas_noise['data'], 'cov', 1)

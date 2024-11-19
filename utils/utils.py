@@ -91,9 +91,8 @@ def array_stats_matrix(rawdata, stat_type='cov', do_noise_bw_scaling=False):
         The computed statistical matrix or vector.
     - noise (optional): ndarray
         The reshaped noise data if requested.
-    
-    Code inspired by Jon Polimeni
     """
+    # TODO: support do_noise_bw_scaling
     # Ensure data is double precision
     noise = rawdata.astype(np.float64)
 
@@ -161,4 +160,8 @@ def array_stats_matrix(rawdata, stat_type='cov', do_noise_bw_scaling=False):
     else:
         raise ValueError(f"Unknown statistics matrix type: {stat_type}")
 
-    return result, noise if do_noise_bw_scaling else result
+    # convert tuple to ndarray
+    # result = np.array(result)
+
+    # return result, noise if do_noise_bw_scaling else result
+    return result
