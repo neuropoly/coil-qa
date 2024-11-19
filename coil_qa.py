@@ -41,8 +41,8 @@ def main():
         meas_noise = read_meas_dat(fname_noise)
     elif vendor == 'ge':
         sys.path.append('/Users/julien/code/orchestra-sdk-2.1-1')  # https://github.com/neuropoly/coil-qa/issues/2
-        from GERecon import Archive, Cartesian2DAcquiredData
-        archive = Archive(fname_image)
+        from GERecon import Pfile
+        pfile = Pfile(fname_image)
         acquiredData = Cartesian2DAcquiredData(archive)
         # Read GE 'p-file' data
         pass
