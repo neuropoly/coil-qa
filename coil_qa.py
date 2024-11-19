@@ -11,6 +11,7 @@
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 # Add paths to custom functions (not necessary in Python, assuming functions are available)
 # Custom function placeholders:
@@ -39,6 +40,10 @@ def main():
         meas_image = read_meas_dat(fname_image)
         meas_noise = read_meas_dat(fname_noise)
     elif vendor == 'ge':
+        sys.path.append('/Users/julien/code/orchestra-sdk-2.1-1')  # https://github.com/neuropoly/coil-qa/issues/2
+        from GERecon import Archive, Cartesian2DAcquiredData
+        archive = Archive(fname_image)
+        acquiredData = Cartesian2DAcquiredData(archive)
         # Read GE 'p-file' data
         pass
 
