@@ -1,4 +1,9 @@
 
+.DS_Store
+.vscode/
+GERecon.so.mac
+venv
+
 *.pyc
 *__pycache__*
 utils/__pycache__*
