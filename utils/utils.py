@@ -5,11 +5,7 @@
 # https://surfer.nmr.mgh.harvard.edu/fswiki/FreeSurferSoftwareLicense
 
 import numpy as np
-
-import numpy as np
 import matplotlib.pyplot as plt
-
-
 
 
 def compute_noise_bandwidth(noise, display=False):
@@ -191,7 +187,7 @@ def mrir_conventional_2d(raw, prot=None):
 
     # Handle protocol input
     if prot is None:
-        prot = read_meas_prot__struct()  # Placeholder for protocol reading function
+        prot = read_meas_prot__struct()
     elif isinstance(prot, (int, float)) and prot == 0:
         prot = {}
         DO_IMAGE_CROP = False
@@ -208,3 +204,204 @@ def mrir_conventional_2d(raw, prot=None):
         img_peft = mrir_image_crop(img_peft, prot.get('flReadoutOSFactor', 1))
 
     return img_peft, prot
+
+
+def read_meas_prot__struct(*args):
+    """
+    Reads protocol information and returns a structured dictionary.
+
+    Returns:
+        YAPS (dict): A dictionary containing protocol parameters with default values.
+        param_list (list): A list of protocol parameter names.
+    """
+    # List of protocol parameters
+    param_list = [
+        "file", "ulVersion", "ManufacturersModelName", "InstitutionName", "tSequenceFileName", 
+        "tProtocolName", "tPatientPosition", "flNominalB0", "lFrequency", 
+        "flReferenceAmplitude", "flAmplitude", "lBaseResolution", "lPhaseEncodingLines", 
+        "iNoOfFourierColumns", "iNoOfFourierLines", "iNoOfFourierPartitions", "uc2DInterpolation", 
+        "lAccelFactPE", "lAccelFact3D", "lRefLinesPE", "lRefLines3D", "ucPATMode", 
+        "ucRefScanMode", "ulCaipirinhaMode", "lReorderingShift3D", "CaipirinhaShift", 
+        "ucAsymmetricEchoAllowed", "ucAsymmetricEchoMode", "flAsymmetry_DERIVED", 
+        "ucPhasePartialFourier", "ucSlicePartialFourier", "alTR", "alTI", "alTE", "alTS", 
+        "alDwellTime", "flBandwidthPerPixelPhaseEncode", "iEffectiveEpiEchoSpacing", 
+        "lEPIFactor", "adFlipAngleDegree", "lRepetitions", "lAverages", "lContrasts", 
+        "dPhaseResolution", "dSliceResolution", "lPartitions", "lNoOfPhaseCorrScans", 
+        "flReadoutOSFactor", "dPhaseOversamplingForDialog", "dSliceOversamplingForDialog", 
+        "tGradientCoil", "tCoilID", "sCoilElementID_tElement", "alRegridRampupTime", 
+        "alRegridRampdownTime", "alRegridFlattopTime", "alRegridDelaySamplesTime", 
+        "aflRegridADCDuration", "alRegridMode", "ucRegridMode", "dThickness", 
+        "dPhaseFOV", "dReadoutFOV", "sSliceArray_lSize", "sSliceArray", 
+        "sSliceArray_reordered", "ucMultiSliceMode", "sSliceArray_ucMode", 
+        "sDiffusion_lDiffDirections", "sDiffusion_alBValue", "sWiPMemBlock_alFree", 
+        "sWiPMemBlock_adFree"
+    ]
+
+    # Create a dictionary with default None values
+    YAPS = {param.replace('.', '_'): None for param in param_list}
+
+    # return YAPS, param_list
+    return YAPS  # Julien Cohen-Adad: removed param_list from return
+
+
+def mrir_iDFT_freqencode(raw, Npoint=None):
+    """
+    Performs the inverse Discrete Fourier Transform (iDFT) along the frequency encoding dimension.
+
+    Parameters:
+        raw (numpy.ndarray): The raw k-space data.
+        Npoint (int, optional): Number of points for the iDFT. If None, the size of the first dimension of `raw` is used.
+
+    Returns:
+        roft (numpy.ndarray): The transformed data after iDFT along the frequency encoding dimension.
+    """
+    # Default Npoint to the size of the first dimension of raw if not provided
+    if Npoint is None:
+        Npoint = raw.shape[0]
+
+    # Perform inverse DFT along the frequency encoding dimension
+    roft = mrir_iDFT(raw, dim=0, Npoint=Npoint)
+
+    return roft
+
+
+def mrir_iDFT_phasencode(raw, coordinate_str='lin', Npoint=None):
+    """
+    Performs the inverse Discrete Fourier Transform (iDFT) along the phase encoding dimension.
+
+    Parameters:
+        raw (numpy.ndarray): The raw k-space data.
+        coordinate_str (str, optional): Coordinate string ('lin' for linear, 'par' for parallel). Default is 'lin'.
+        Npoint (int, optional): Number of points for the iDFT. If None, the size of the specified dimension of `raw` is used.
+
+    Returns:
+        peft (numpy.ndarray): The transformed data after iDFT along the phase encoding dimension.
+    """
+    # Default coordinate string is 'lin' (linear)
+    coordinate_str = coordinate_str.lower()
+
+    # Determine the dimension based on the coordinate string
+    if coordinate_str.startswith('lin'):
+        dim = 1  # Second dimension (index 1 in Python)
+    elif coordinate_str.startswith('par'):
+        dim = 8  # Ninth dimension (index 8 in Python)
+    else:
+        raise ValueError(f'Unrecognized data dimension: "{coordinate_str}"')
+
+    # Warn if the selected dimension has size 1
+    if raw.shape[dim] == 1:
+        print(f'Warning: Input data has no significant size along dimension "{coordinate_str}".')
+
+    # Default Npoint to the size of the specified dimension if not provided
+    if Npoint is None:
+        Npoint = raw.shape[dim]
+
+    # Perform inverse DFT along the specified dimension
+    peft = mrir_iDFT(raw, dim, Npoint=Npoint)
+
+    return peft
+
+
+def mrir_iDFT(raw, dim, Npoint=None, FLAG_siemens_style=False):
+    """
+    Performs the inverse Discrete Fourier Transform (iDFT) along a specified dimension.
+
+    Parameters:
+        raw (numpy.ndarray): The raw k-space data.
+        dim (int): The dimension along which to perform the iDFT.
+        Npoint (int, optional): Number of points for the iDFT. Defaults to the size of the specified dimension.
+        FLAG_siemens_style (bool, optional): Flag for Siemens-style FFT processing. Default is False.
+
+    Returns:
+        ft (numpy.ndarray): The transformed data after iDFT.
+    """
+    # Default Npoint to the size of the specified dimension if not provided
+    if Npoint is None:
+        Npoint = raw.shape[dim]
+
+    # Zero-padding if Npoint is greater than the size along the specified dimension
+    if Npoint > raw.shape[dim]:
+        pad_dims = [(0, 0)] * raw.ndim  # Create a padding specification for all dimensions
+        pad_dims[dim] = (0, Npoint - raw.shape[dim])  # Pad only the specified dimension
+        raw = np.pad(raw, pad_dims, mode='constant')
+
+    # Perform the iDFT
+    if FLAG_siemens_style:
+        # Siemens-style FFT
+        ft = np.fft.fftshift(
+            np.fft.fft(
+                np.fft.ifftshift(raw, axes=dim), N=Npoint, axis=dim
+            ),
+            axes=dim
+        )
+    else:
+        # Standard FFT
+        ft = np.fft.ifftshift(raw, axes=dim)
+        ft = np.fft.ifft(ft, n=Npoint, axis=dim)
+        ft = np.fft.fftshift(ft, axes=dim) * Npoint
+
+    return ft
+
+
+def mrir_image_crop(img_oversampled, prot=None, os_factor_freqencode=2, os_factor_phasencode=1, os_factor_partencode=1, verbose=False):
+    """
+    Crop an image volume reconstructed from oversampled k-space data.
+
+    Parameters:
+        img_oversampled (numpy.ndarray): Oversampled image volume.
+        prot (dict, optional): Protocol dictionary containing oversampling factors. Defaults to None.
+        os_factor_freqencode (int, optional): Oversampling factor along the frequency-encoded direction. Defaults to 2.
+        os_factor_phasencode (int, optional): Oversampling factor along the phase-encoded direction. Defaults to 1.
+        os_factor_partencode (int, optional): Oversampling factor along the partition-encoded direction. Defaults to 1.
+        verbose (bool, optional): Verbosity flag. Defaults to False.
+
+    Returns:
+        img_cropped (numpy.ndarray): Cropped image volume.
+    """
+    # Extract oversampling factors from the protocol if provided
+    if prot is not None:
+        os_factor_freqencode = prot.get("flReadoutOSFactor", os_factor_freqencode)
+        os_factor_phasencode = prot.get("dPhaseOversamplingForDialog", os_factor_phasencode - 1) + 1
+        os_factor_partencode = prot.get("dSliceOversamplingForDialog", os_factor_partencode - 1) + 1
+
+    dims = img_oversampled.shape
+
+    # Ensure oversampling factors are valid
+    for dim, os_factor, dim_name in zip(
+        [0, 1, 2],
+        [os_factor_freqencode, os_factor_phasencode, os_factor_partencode],
+        ["frequency-encoded", "phase-encoded", "partition-encoded"]
+    ):
+        if os_factor > 1 and (dims[dim] % os_factor != 0):
+            raise ValueError(f"Samples are not integer multiples of the oversampling factor along the {dim_name} direction.")
+
+    img_cropped = img_oversampled.copy()
+
+    # Crop along the frequency-encoded direction
+    if os_factor_freqencode > 1:
+        newdim = dims[0] // os_factor_freqencode
+        start_index = (dims[0] - newdim) // 2
+        end_index = start_index + newdim
+        if verbose:
+            print(f"Cropping FREQENCODE dimension: {dims[0]} -> {newdim}")
+        img_cropped = img_cropped[start_index:end_index, ...]
+
+    # Crop along the phase-encoded direction
+    if os_factor_phasencode > 1:
+        newdim = dims[1] // os_factor_phasencode
+        start_index = (dims[1] - newdim) // 2
+        end_index = start_index + newdim
+        if verbose:
+            print(f"Cropping PHASENCODE dimension: {dims[1]} -> {newdim}")
+        img_cropped = img_cropped[:, start_index:end_index, ...]
+
+    # Crop along the partition-encoded direction
+    if os_factor_partencode > 1:
+        newdim = dims[2] // os_factor_partencode
+        start_index = (dims[2] - newdim) // 2
+        end_index = start_index + newdim
+        if verbose:
+            print(f"Cropping PARTENCODE dimension: {dims[2]} -> {newdim}")
+        img_cropped = img_cropped[:, :, start_index:end_index, ...]
+
+    return img_cropped

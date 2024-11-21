@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-from utils.utils import array_stats_matrix
+from utils.utils import array_stats_matrix, mrir_conventional_2d
 # Add paths to custom functions (not necessary in Python, assuming functions are available)
 # Custom function placeholders:
 # read_meas_dat, mrir_ice_dimensions, mrir_array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss, mrir_array_SNR_rss
@@ -75,7 +75,7 @@ def main():
     plt.savefig(f'{fname_image}_noisecorr.png')
 
     # Reconstruction of coil sensitivity images
-    img = mrir_conventional_2d(meas_image['data'])
+    img = mrir_conventional_2d(meas_image)
     sens = img
 
     # Combine the image using the root-sum-of-squares method
