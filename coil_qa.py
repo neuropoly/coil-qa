@@ -68,7 +68,7 @@ def main():
     plt.imshow(noisecof, cmap='hot', interpolation='nearest')
     plt.colorbar()
     plt.title('Noise Correlation Matrix')
-    plt.show()
+    plt.savefig(f'{fname_image}_noisecorr.png')
 
     # # Step 1b: Calculate channel noise covariance matrix
     # noisecov = mrir_array_stats_matrix(meas_noise['data'], 'cov', 1)
