@@ -405,3 +405,19 @@ def mrir_image_crop(img_oversampled, prot=None, os_factor_freqencode=2, os_facto
         img_cropped = img_cropped[:, :, start_index:end_index, ...]
 
     return img_cropped
+
+
+def mrir_array_combine_rss(img_multichan):
+    """
+    Combines multi-channel image data using the Root-Sum-of-Squares (RSS) method.
+
+    Parameters:
+        img_multichan (numpy.ndarray): Multi-channel image data with the channel dimension as the third axis.
+
+    Returns:
+        img_combine_rss (numpy.ndarray): Image combined using the RSS method.
+    """
+    # Compute the root-sum-of-squares across the channel dimension (axis=2)
+    img_combine_rss = np.sqrt(np.sum(np.abs(img_multichan) ** 2, axis=2))
+
+    return img_combine_rss

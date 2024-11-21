@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-from utils.utils import array_stats_matrix, mrir_conventional_2d
+from utils.utils import array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss
 # Add paths to custom functions (not necessary in Python, assuming functions are available)
 # Custom function placeholders:
 # read_meas_dat, mrir_ice_dimensions, mrir_array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss, mrir_array_SNR_rss
@@ -79,14 +79,13 @@ def main():
     sens = img
 
     # Combine the image using the root-sum-of-squares method
-    img_rss = mrir_array_combine_rss(img)
-    img_rss = np.squeeze(img_rss[..., 0])
+    img_rss = mrir_array_combine_rss(img[0])
 
-    # plt.figure()
-    # plt.imshow(img_rss, cmap='gray', aspect='equal')
-    # plt.title('Image After RSS Combination')
-    # plt.colorbar()
-    # plt.show()
+    plt.figure()
+    plt.imshow(img_rss, cmap='gray', aspect='equal')
+    plt.title('Image After RSS Combination')
+    plt.colorbar()
+    plt.savefig(f'{fname_image}_rss.png')
 
     # # Step 4: Calculate corresponding SNR maps for the RSS combination method
     # snr_rss = mrir_array_SNR_rss(img, noisecov)
