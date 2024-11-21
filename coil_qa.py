@@ -64,14 +64,15 @@ def main():
 
     print(f' ==> average off-diagonal coupling: {noisecof_avg * 100:.2f}%')
 
-    # Display noise correlation matrix
-    plt.imshow(noisecof, cmap='hot', interpolation='nearest')
+    # Display noise correlation matrix (absolute values)
+    plt.figure()
+    plt.imshow(np.abs(noisecof), cmap='jet', interpolation='nearest')
     plt.colorbar()
     plt.title('Noise Correlation Matrix')
     plt.savefig(f'{fname_image}_noisecorr.png')
 
-    # # Step 1b: Calculate channel noise covariance matrix
-    # noisecov = mrir_array_stats_matrix(meas_noise['data'], 'cov', 1)
+    # Calculate channel noise covariance matrix
+    noisecov = mrir_array_stats_matrix(meas_noise['data'], 'cov', 1)
 
     # # Display noise covariance matrix
     # plt.figure()
