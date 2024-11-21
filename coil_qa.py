@@ -67,27 +67,20 @@ def main():
     # Display noise correlation matrix (absolute values)
     plt.figure()
     plt.imshow(np.abs(noisecof), cmap='jet', interpolation='nearest')
+    # change label values so that the index starts at 1
+    plt.xticks(np.arange(noisecof.shape[0]), np.arange(1, noisecof.shape[0] + 1))
+    plt.yticks(np.arange(noisecof.shape[0]), np.arange(1, noisecof.shape[0] + 1))
     plt.colorbar()
     plt.title('Noise Correlation Matrix')
     plt.savefig(f'{fname_image}_noisecorr.png')
 
-    # Calculate channel noise covariance matrix
-    noisecov = mrir_array_stats_matrix(meas_noise['data'], 'cov', 1)
+    # Reconstruction of coil sensitivity images
+    img = mrir_conventional_2d(meas_image['data'])
+    sens = img
 
-    # # Display noise covariance matrix
-    # plt.figure()
-    # plt.imshow(np.abs(noisecov), aspect='equal', cmap='viridis')
-    # plt.title('Channel Noise Covariance Matrix')
-    # plt.colorbar()
-    # plt.show()
-
-    # # Step 2: Reconstruction of coil sensitivity images
-    # img = mrir_conventional_2d(meas_image['data'])
-    # sens = img
-
-    # # Step 3: Combine the image using the root-sum-of-squares method
-    # img_rss = mrir_array_combine_rss(img)
-    # img_rss = np.squeeze(img_rss[..., 0])
+    # Combine the image using the root-sum-of-squares method
+    img_rss = mrir_array_combine_rss(img)
+    img_rss = np.squeeze(img_rss[..., 0])
 
     # plt.figure()
     # plt.imshow(img_rss, cmap='gray', aspect='equal')

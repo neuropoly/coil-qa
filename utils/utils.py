@@ -1,10 +1,16 @@
 # This file contains utility functions for data processing and visualization.
+# 
 # A lot of these functions were originally written by Jon Polimeni and converted to Python by Julien Cohen-Adad.
+# Terms and conditions for use, reproduction, distribution and contribution are found here:
+# https://surfer.nmr.mgh.harvard.edu/fswiki/FreeSurferSoftwareLicense
 
 import numpy as np
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+
+
 
 def compute_noise_bandwidth(noise, display=False):
     """
@@ -165,3 +171,40 @@ def array_stats_matrix(rawdata, stat_type='cov', do_noise_bw_scaling=False):
 
     # return result, noise if do_noise_bw_scaling else result
     return result
+
+
+def mrir_conventional_2d(raw, prot=None):
+    """
+    Reconstructs conventional (Cartesian) acquisitions.
+
+    Parameters:
+        raw (numpy.ndarray): Raw k-space data.
+        prot (dict, optional): Protocol structure containing acquisition parameters. 
+                               If None, defaults will be used.
+
+    Returns:
+        img_peft (numpy.ndarray): The reconstructed image.
+        prot (dict): The protocol used for reconstruction.
+    """
+    # Default settings
+    DO_IMAGE_CROP = True
+
+    # Handle protocol input
+    if prot is None:
+        prot = read_meas_prot__struct()  # Placeholder for protocol reading function
+    elif isinstance(prot, (int, float)) and prot == 0:
+        prot = {}
+        DO_IMAGE_CROP = False
+
+    # Step 1: Frequency encoding inverse Fourier transform
+    hyb_roft = mrir_iDFT_freqencode(raw, prot.get('iNoOfFourierColumns', raw.shape[0]))
+
+    # Step 2: Phase encoding inverse Fourier transform
+    img_peft = mrir_iDFT_phasencode(hyb_roft, 'lin', prot.get('iNoOfFourierLines', raw.shape[1]))
+    del hyb_roft  # Clear intermediate variable
+
+    # Step 3: Optional image cropping
+    if DO_IMAGE_CROP:
+        img_peft = mrir_image_crop(img_peft, prot.get('flReadoutOSFactor', 1))
+
+    return img_peft, prot
