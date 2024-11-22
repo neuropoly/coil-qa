@@ -63,23 +63,17 @@ def main():
     print(f' ==> average off-diagonal coupling: {mean_noise_corr_upper_scaled * 100:.2f}%')
 
     # Display noise correlation and covariance matrices
-    plt.figure()
-    plt.imshow(np.abs(noise_corr), cmap='jet', interpolation='nearest')
-    # change label values so that the index starts at 1
-    plt.xticks(np.arange(noise_corr.shape[0]), np.arange(1, noise_corr.shape[0] + 1))
-    plt.yticks(np.arange(noise_corr.shape[0]), np.arange(1, noise_corr.shape[0] + 1))
-    plt.colorbar()
-    plt.title('Noise Correlation Matrix')
-    plt.savefig(f'{fname_image}_noisecorr.png')
-
-    plt.figure()
-    plt.imshow(np.abs(noise_cov), cmap='jet', interpolation='nearest')
-    # change label values so that the index starts at 1
-    plt.xticks(np.arange(noise_cov.shape[0]), np.arange(1, noise_cov.shape[0] + 1))
-    plt.yticks(np.arange(noise_cov.shape[0]), np.arange(1, noise_cov.shape[0] + 1))
-    plt.colorbar()
-    plt.title('Noise Covariance Matrix')
-    plt.savefig(f'{fname_image}_noisecov.png')
+    for matrix, title, fname_suffix in zip([noise_corr, noise_cov], 
+                                           ['Noise Correlation Matrix', 'Noise Covariance Matrix'], 
+                                           ['noisecorr', 'noisecov']):
+        plt.figure()
+        plt.imshow(np.abs(matrix), cmap='jet', interpolation='nearest')
+        # change label values so that the index starts at 1
+        plt.xticks(np.arange(matrix.shape[0]), np.arange(1, matrix.shape[0] + 1))
+        plt.yticks(np.arange(matrix.shape[0]), np.arange(1, matrix.shape[0] + 1))
+        plt.colorbar()
+        plt.title(title)
+        plt.savefig(f'{fname_image}_{fname_suffix}.png')
 
     # Reconstruction of coil sensitivity images
     img = mrir_conventional_2d(meas_image)
