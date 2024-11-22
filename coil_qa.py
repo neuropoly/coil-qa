@@ -33,6 +33,9 @@ def main():
     # Identify which vendor's data is being used
     if fname_image.endswith('.dat'):
         vendor = 'siemens'
+        # TODO: add support for other Siemens file formats
+        # Display not covered feature error
+        raise NotImplementedError('This feature is not yet implemented')
     elif fname_image.endswith('.7'):
         vendor = 'ge'
     else:
@@ -96,29 +99,6 @@ def main():
     plt.colorbar()
     plt.savefig(f'{fname_image}_snr_rss.png')
 
-
-    # # Reconstruction of coil sensitivity images
-    # img = mrir_conventional_2d(meas_image)
-    # sens = img
-
-    # # Combine the image using the root-sum-of-squares method
-    # img_rss = mrir_array_combine_rss(img[0])
-
-    # plt.figure()
-    # plt.imshow(img_rss, cmap='gray', aspect='equal')
-    # plt.title('Image After RSS Combination')
-    # plt.colorbar()
-    # plt.savefig(f'{fname_image}_rss_ge.png')
-
-    # Calculate corresponding SNR maps for the RSS combination method
-    # snr_rss = mrir_array_SNR_rss(img, noisecov)
-
-    # plt.figure()
-    # plt.imshow(snr_rss, cmap='jet', aspect='equal', vmin=0, vmax=500)
-    # plt.title('SNR of RSS Combination')
-    # plt.colorbar()
-    # plt.savefig(f'snr_{meas_image["file"]}.png')
-    # plt.show()
 
 if __name__ == '__main__':
     main()
