@@ -183,7 +183,7 @@ def mrir_conventional_2d(raw, prot=None):
         prot (dict): The protocol used for reconstruction.
     """
     # Default settings
-    DO_IMAGE_CROP = True
+    DO_IMAGE_CROP = False  # Julien Cohen-Adad: Switched to False
 
     # Handle protocol input
     if prot is None:
@@ -192,14 +192,13 @@ def mrir_conventional_2d(raw, prot=None):
         prot = {}
         DO_IMAGE_CROP = False
 
-    # Step 1: Frequency encoding inverse Fourier transform
+    # Frequency encoding inverse Fourier transform
     hyb_roft = mrir_iDFT_freqencode(raw, prot.get('iNoOfFourierColumns', raw.shape[0]))
 
-    # Step 2: Phase encoding inverse Fourier transform
+    # Phase encoding inverse Fourier transform
     img_peft = mrir_iDFT_phasencode(hyb_roft, 'lin', prot.get('iNoOfFourierLines', raw.shape[1]))
-    del hyb_roft  # Clear intermediate variable
 
-    # Step 3: Optional image cropping
+    # Optional image cropping
     if DO_IMAGE_CROP:
         img_peft = mrir_image_crop(img_peft, prot.get('flReadoutOSFactor', 1))
 
@@ -325,15 +324,31 @@ def mrir_iDFT(raw, dim, Npoint=None, FLAG_siemens_style=False):
         pad_dims[dim] = (0, Npoint - raw.shape[dim])  # Pad only the specified dimension
         raw = np.pad(raw, pad_dims, mode='constant')
 
+
+    # Display the k-space data
+    # plt.figure()
+    # plt.imshow(np.log(1 + np.abs(raw[:, :, 8])), cmap="gray")
+    # plt.title("K-Space Data")
+    # plt.colorbar()
+    # plt.savefig("kspace_data.png")
+
+    FLAG_ge_style = True  # Julien Cohen-Adad
+
     # Perform the iDFT
     if FLAG_siemens_style:
         # Siemens-style FFT
         ft = np.fft.fftshift(
             np.fft.fft(
-                np.fft.ifftshift(raw, axes=dim), N=Npoint, axis=dim
+                np.fft.ifftshift(raw, axes=dim), n=Npoint, axis=dim
             ),
             axes=dim
         )
+    elif FLAG_ge_style:
+        # GE-style FFT
+        # TODO: make sure the axes below work for all scenario
+        ft = np.fft.ifftshift(raw, axes=(0, 1))
+        ft = np.fft.ifft(ft, n=Npoint, axis=dim)
+        ft = np.fft.fftshift(ft, axes=(0))
     else:
         # Standard FFT
         ft = np.fft.ifftshift(raw, axes=dim)
@@ -421,3 +436,7 @@ def mrir_array_combine_rss(img_multichan):
     img_combine_rss = np.sqrt(np.sum(np.abs(img_multichan) ** 2, axis=2))
 
     return img_combine_rss
+
+
+import numpy as np
+import matplotlib.pyplot as plt

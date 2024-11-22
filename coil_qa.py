@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import sys
 
 from utils.utils import array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss
+from utils.ge_utils import process_noise_ge
+
 # Add paths to custom functions (not necessary in Python, assuming functions are available)
 # Custom function placeholders:
 # read_meas_dat, mrir_ice_dimensions, mrir_array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss, mrir_array_SNR_rss
@@ -46,6 +48,7 @@ def main():
         # Read GE 'p-file' data
         pfile = Pfile(fname_image)
         metadata = pfile.MetaData()
+
         meas_image = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
         pfile = Pfile(fname_noise)
         meas_noise = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
@@ -57,6 +60,7 @@ def main():
 
     # Calculate channel noise correlation coefficient matrix
     noisecof = array_stats_matrix(meas_noise, 'cof')
+    # noise_cov, noise_corr, mean_upper_scaled = process_noise_ge(meas_noise)
 
     # Calculate average off-diagonal coupling
     mask = np.tril(np.ones(noisecof.shape), -1) > 0
@@ -85,7 +89,7 @@ def main():
     plt.imshow(img_rss, cmap='gray', aspect='equal')
     plt.title('Image After RSS Combination')
     plt.colorbar()
-    plt.savefig(f'{fname_image}_rss.png')
+    plt.savefig(f'{fname_image}_rss_ge.png')
 
     # # Step 4: Calculate corresponding SNR maps for the RSS combination method
     # snr_rss = mrir_array_SNR_rss(img, noisecov)
