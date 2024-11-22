@@ -439,4 +439,56 @@ def mrir_array_combine_rss(img_multichan):
 
 
 import numpy as np
-import matplotlib.pyplot as plt
+
+
+def reconstruct_coil_images(kspace):
+    """
+    Reconstruct coil sensitivity images from k-space data.
+
+    Parameters:
+        kspace (numpy.ndarray): K-space data of shape (Nx, Ny, Nchannels).
+
+    Returns:
+        coil_images (numpy.ndarray): Reconstructed coil images of shape (Nx, Ny, Nchannels).
+    """
+    # Apply inverse FFT along the first two axes (spatial dimensions)
+    coil_images = np.fft.fftshift(
+        np.fft.ifft2(
+            np.fft.ifftshift(kspace, axes=(0, 1)), 
+            axes=(0, 1)),
+        axes=(0))
+    return coil_images
+
+
+def combine_rss(coil_images):
+    """
+    Combine coil images using the root-sum-of-squares (RSS) method.
+
+    Parameters:
+        coil_images (numpy.ndarray): Coil images of shape (Nx, Ny, Nchannels).
+
+    Returns:
+        rss_image (numpy.ndarray): Combined RSS image of shape (Nx, Ny).
+    """
+    rss_image = np.sqrt(np.sum(np.abs(coil_images) ** 2, axis=2))
+    return rss_image
+
+
+def calculate_snr_rss(rss_image, noise_cov):
+    """
+    Calculate SNR maps for the RSS combination.
+
+    Parameters:
+        rss_image (numpy.ndarray): Combined RSS image of shape (Nx, Ny).
+        noise_cov (numpy.ndarray): Noise covariance matrix of shape (Nchannels, Nchannels).
+
+    Returns:
+        snr_map (numpy.ndarray): SNR map of shape (Nx, Ny).
+    """
+    # Noise variance is the sum of the diagonal elements of the covariance matrix
+    noise_variance = np.trace(noise_cov)
+    noise_std = np.sqrt(noise_variance)
+
+    # Calculate SNR
+    snr_map = rss_image / noise_std
+    return snr_map

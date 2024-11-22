@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-from utils.utils import compute_noise_stats, array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss
+from utils.utils import compute_noise_stats, array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss, reconstruct_coil_images, combine_rss, calculate_snr_rss
 from utils.ge_utils import process_noise_ge
 
 # Add paths to custom functions (not necessary in Python, assuming functions are available)
@@ -75,21 +75,43 @@ def main():
         plt.title(title)
         plt.savefig(f'{fname_image}_{fname_suffix}.png')
 
-    # Reconstruction of coil sensitivity images
-    img = mrir_conventional_2d(meas_image)
-    sens = img
+    # Reconstruct coil sensitivity images
+    coil_images = reconstruct_coil_images(meas_image)
 
-    # Combine the image using the root-sum-of-squares method
-    img_rss = mrir_array_combine_rss(img[0])
+    # Combine images using RSS
+    img_rss = combine_rss(coil_images)
 
     plt.figure()
     plt.imshow(img_rss, cmap='gray', aspect='equal')
     plt.title('Image After RSS Combination')
     plt.colorbar()
-    plt.savefig(f'{fname_image}_rss_ge.png')
+    plt.savefig(f'{fname_image}_rss.png')
+
+    # Calculate SNR map
+    snr_rss = calculate_snr_rss(img_rss, noise_cov)
+
+    plt.figure()
+    plt.imshow(np.abs(snr_rss), cmap='jet', aspect='equal')
+    plt.title('SNR map from RSS Combination')
+    plt.colorbar()
+    plt.savefig(f'{fname_image}_snr_rss.png')
+
+
+    # # Reconstruction of coil sensitivity images
+    # img = mrir_conventional_2d(meas_image)
+    # sens = img
+
+    # # Combine the image using the root-sum-of-squares method
+    # img_rss = mrir_array_combine_rss(img[0])
+
+    # plt.figure()
+    # plt.imshow(img_rss, cmap='gray', aspect='equal')
+    # plt.title('Image After RSS Combination')
+    # plt.colorbar()
+    # plt.savefig(f'{fname_image}_rss_ge.png')
 
     # Calculate corresponding SNR maps for the RSS combination method
-    snr_rss = mrir_array_SNR_rss(img, noisecov)
+    # snr_rss = mrir_array_SNR_rss(img, noisecov)
 
     # plt.figure()
     # plt.imshow(snr_rss, cmap='jet', aspect='equal', vmin=0, vmax=500)
