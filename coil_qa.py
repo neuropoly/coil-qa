@@ -13,12 +13,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-from utils.utils import compute_noise_stats, array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss, reconstruct_coil_images, combine_rss, calculate_snr_rss
-from utils.ge_utils import process_noise_ge
+from utils.utils import compute_noise_stats, reconstruct_coil_images, combine_rss, calculate_snr_rss
 
-# Add paths to custom functions (not necessary in Python, assuming functions are available)
-# Custom function placeholders:
-# read_meas_dat, mrir_ice_dimensions, mrir_array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss, mrir_array_SNR_rss
 
 def main():
     # Parse command-line arguments
@@ -46,6 +42,7 @@ def main():
         meas_image = read_meas_dat(fname_image)
         meas_noise = read_meas_dat(fname_noise)
     elif vendor == 'ge':
+        # TODO: do not hardcode path
         sys.path.append('/Users/julien/code/orchestra-sdk-2.1-1')  # https://github.com/neuropoly/coil-qa/issues/2
         from GERecon import Pfile
         # Read GE 'p-file' data
@@ -56,10 +53,6 @@ def main():
         pfile = Pfile(fname_noise)
         meas_noise = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
         pass
-
-    # # Display dimensions of image and noise data
-    # mrir_ice_dimensions(meas_image['data'])
-    # mrir_ice_dimensions(meas_noise['data'])
 
     # Compute noise statistics
     noise_corr, mean_noise_corr_upper_scaled, noise_cov = compute_noise_stats(meas_noise)
