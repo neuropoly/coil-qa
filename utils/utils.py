@@ -1,6 +1,7 @@
 # This file contains utility functions for data processing and visualization.
 # 
-# A lot of these functions were originally written by Jon Polimeni and converted to Python by Julien Cohen-Adad.
+# Many of these functions were originally written by Jon Polimeni in Matlab (licence below), 
+# and were then converted to Python by Julien Cohen-Adad.
 # Terms and conditions for use, reproduction, distribution and contribution are found here:
 # https://surfer.nmr.mgh.harvard.edu/fswiki/FreeSurferSoftwareLicense
 
@@ -8,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def compute_noise_bandwidth(noise, display=False):
+def compute_noise_stats(noise, display=False):
     """
     Calculate noise spectrum and return effective noise bandwidth.
     
@@ -25,50 +26,48 @@ def compute_noise_bandwidth(noise, display=False):
         Noise bandwidth for each channel.
     - N_power_spectrum_avg: ndarray
         Average noise power spectrum.
+    
+    References:
+        Kellman P, McVeigh ER. Image reconstruction in SNR units: a general method for SNR measurement. Magn Reson Med. 2005 Dec;54(6):1439-47.
     """
-    # Ensure dimensions are handled correctly
-    dims = list(noise.shape)
-    while len(dims) < 16:
-        dims.append(1)
+    # Handle dimensions
+    dims = noise.shape
+    if len(dims) == 2:
+        dims = (*dims, 1)
+    
+    num_channels = dims[2]
 
     # Reshape to samples x channels
-    noise = np.transpose(noise, axes=list(range(len(dims) - 1)) + [len(dims) - 1])
-    noise = noise.reshape(-1, dims[2])
+    noise = np.reshape(noise, (np.prod(dims[0:2]), num_channels))
+    num_samples = noise.shape[0]
+
+    # Compute the correlation matrix
+    # Note: No need to compute the FFT as done in previous implementations, because correlation 
+    # coefficients are scale-invariant and the Fourier transform preserves the energy of the signal 
+    # (Parseval's theorem)
+    noise_corr = np.corrcoef(noise, rowvar=False)  # Set rowvar=False because variables are columns
+
+    # Extract the upper triangle of the correlation matrix, excluding the main diagonal
+    noise_corr_upper = np.triu(noise_corr, k=1)  # k=1 excludes the main diagonal
+
+    # Compute the mean of the absolute values
+    mean_noise_corr_upper = np.mean(np.abs(noise_corr_upper.flatten()))
+
+    # Compute the scaling factor
+    scaling_factor = num_channels**2 / (0.5 * num_channels**2 - num_channels)
+
+    # Compute the scaled mean
+    mean_noise_corr_upper_scaled = mean_noise_corr_upper * scaling_factor
+
 
     # Compute FFT
-    N = np.fft.fft(noise.reshape(dims[0], -1, dims[2]), axis=0) / np.sqrt(dims[0])
-    N_power_spectrum = np.abs(N) ** 2
+    # noise_spectrum = np.fft.fft(noise, axis=0) / np.sqrt(dims[0])
 
-    # Channel-wise power spectrum
-    N_power_spectrum_chan = np.mean(N_power_spectrum, axis=1)
-    N_power_spectrum_chan_normalized = N_power_spectrum_chan / N_power_spectrum_chan[0, :]
-    noise_bandwidth_chan = np.mean(N_power_spectrum_chan_normalized, axis=0)
+    # Compute noise covariance matrix
+    noise_cov = np.dot(noise.T.conj(), noise) / (num_samples - 1)
+    # noise_cov = np.cov(noise_spectrum, rowvar=False)  # Shape: (num_channels, num_channels)
 
-    # Average power spectrum
-    N_power_spectrum_avg = np.mean(N_power_spectrum_chan, axis=1)
-    N_power_spectrum_avg_normalized = N_power_spectrum_avg / N_power_spectrum_avg[0]
-    noise_bandwidth = np.mean(N_power_spectrum_avg_normalized)
-
-    # Display plot if required
-    if display:
-        plt.figure()
-        plt.gca().add_patch(plt.Rectangle((0.25 * dims[0], 0.001), 0.5 * dims[0], 1.098, 
-                                          facecolor='0.9', linestyle='none'))
-        plt.plot(np.fft.fftshift(N_power_spectrum_avg_normalized))
-        plt.xticks(
-            [0, dims[0] * 0.25, dims[0] * 0.5, dims[0] * 0.75, dims[0]],
-            [-0.5, -0.25, 0, 0.25, 0.5]
-        )
-        plt.xlim([0, dims[0]])
-        plt.ylim([0, 1.1])
-        plt.grid(axis='y')
-        plt.xlabel('Frequency (normalized)')
-        plt.ylabel('Power (DC normalized)')
-        plt.title(f'Average of normalized noise power spectrum, BW={noise_bandwidth:.3f}')
-        plt.box(on=True)
-        plt.show()
-
-    return noise_bandwidth, noise_bandwidth_chan, N_power_spectrum_avg
+    return noise_corr, mean_noise_corr_upper_scaled, noise_cov
 
 
 def array_stats_matrix(rawdata, stat_type='cov', do_noise_bw_scaling=False):
@@ -99,7 +98,8 @@ def array_stats_matrix(rawdata, stat_type='cov', do_noise_bw_scaling=False):
     noise = rawdata.astype(np.float64)
 
     if do_noise_bw_scaling:
-        noise_bandwidth = compute_noise_bandwidth(noise)
+        noise_bandwidth, noise_bandwidth_chan, N_power_spectrum_avg = compute_noise_bandwidth(
+            noise, display=True)
         if noise_bandwidth < 0.6:
             print("Warning: Noise bandwidth is too low; data may not be pure noise.")
 

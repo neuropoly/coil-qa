@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-from utils.utils import array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss
+from utils.utils import compute_noise_stats, array_stats_matrix, mrir_conventional_2d, mrir_array_combine_rss
 from utils.ge_utils import process_noise_ge
 
 # Add paths to custom functions (not necessary in Python, assuming functions are available)
@@ -58,25 +58,28 @@ def main():
     # mrir_ice_dimensions(meas_image['data'])
     # mrir_ice_dimensions(meas_noise['data'])
 
-    # Calculate channel noise correlation coefficient matrix
-    noisecof = array_stats_matrix(meas_noise, 'cof')
-    # noise_cov, noise_corr, mean_upper_scaled = process_noise_ge(meas_noise)
+    # Compute noise statistics
+    noise_corr, mean_noise_corr_upper_scaled, noise_cov = compute_noise_stats(meas_noise)
+    print(f' ==> average off-diagonal coupling: {mean_noise_corr_upper_scaled * 100:.2f}%')
 
-    # Calculate average off-diagonal coupling
-    mask = np.tril(np.ones(noisecof.shape), -1) > 0
-    noisecof_avg = np.mean(np.abs(noisecof[mask]))
-
-    print(f' ==> average off-diagonal coupling: {noisecof_avg * 100:.2f}%')
-
-    # Display noise correlation matrix (absolute values)
+    # Display noise correlation and covariance matrices
     plt.figure()
-    plt.imshow(np.abs(noisecof), cmap='jet', interpolation='nearest')
+    plt.imshow(np.abs(noise_corr), cmap='jet', interpolation='nearest')
     # change label values so that the index starts at 1
-    plt.xticks(np.arange(noisecof.shape[0]), np.arange(1, noisecof.shape[0] + 1))
-    plt.yticks(np.arange(noisecof.shape[0]), np.arange(1, noisecof.shape[0] + 1))
+    plt.xticks(np.arange(noise_corr.shape[0]), np.arange(1, noise_corr.shape[0] + 1))
+    plt.yticks(np.arange(noise_corr.shape[0]), np.arange(1, noise_corr.shape[0] + 1))
     plt.colorbar()
     plt.title('Noise Correlation Matrix')
     plt.savefig(f'{fname_image}_noisecorr.png')
+
+    plt.figure()
+    plt.imshow(np.abs(noise_cov), cmap='jet', interpolation='nearest')
+    # change label values so that the index starts at 1
+    plt.xticks(np.arange(noise_cov.shape[0]), np.arange(1, noise_cov.shape[0] + 1))
+    plt.yticks(np.arange(noise_cov.shape[0]), np.arange(1, noise_cov.shape[0] + 1))
+    plt.colorbar()
+    plt.title('Noise Covariance Matrix')
+    plt.savefig(f'{fname_image}_noisecov.png')
 
     # Reconstruction of coil sensitivity images
     img = mrir_conventional_2d(meas_image)
@@ -91,8 +94,8 @@ def main():
     plt.colorbar()
     plt.savefig(f'{fname_image}_rss_ge.png')
 
-    # # Step 4: Calculate corresponding SNR maps for the RSS combination method
-    # snr_rss = mrir_array_SNR_rss(img, noisecov)
+    # Calculate corresponding SNR maps for the RSS combination method
+    snr_rss = mrir_array_SNR_rss(img, noisecov)
 
     # plt.figure()
     # plt.imshow(snr_rss, cmap='jet', aspect='equal', vmin=0, vmax=500)
