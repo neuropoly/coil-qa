@@ -52,7 +52,12 @@ def main():
         meas_image = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
         pfile = Pfile(fname_noise)
         meas_noise = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
-        pass
+
+        # Fetch pixel size in mm
+        header = pfile.Header()
+        fov = header['rdb_hdr_image']['dfov']
+        xdim = fov / metadata['acquiredXRes']
+        ydim = fov / metadata['acquiredYRes']
 
     # Compute noise statistics
     noise_corr, mean_noise_corr_upper_scaled, noise_cov = compute_noise_stats(meas_noise)
@@ -77,8 +82,13 @@ def main():
     # Combine images using RSS
     img_rss = combine_rss(coil_images)
 
+    # Calculate the extent of the image
+    Nx, Ny = img_rss.shape  # Image dimensions
+    extent = [0, Nx * xdim, 0, Ny * ydim]  # [xmin, xmax, ymin, ymax]
+    # display the image
     plt.figure()
-    plt.imshow(img_rss, cmap='gray', aspect='equal')
+    # Plot the image with scaled axes
+    plt.imshow(img_rss, cmap='gray', extent=extent)
     plt.title('Image After RSS Combination')
     plt.colorbar()
     plt.savefig(f'{fname_image}_rss.png')
@@ -87,7 +97,7 @@ def main():
     snr_rss = calculate_snr_rss(img_rss, noise_cov)
 
     plt.figure()
-    plt.imshow(np.abs(snr_rss), cmap='jet', aspect='equal')
+    plt.imshow(np.abs(snr_rss), cmap='jet', extent=extent)
     plt.title('SNR map from RSS Combination')
     plt.colorbar()
     plt.savefig(f'{fname_image}_snr_rss.png')
