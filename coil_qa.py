@@ -26,6 +26,8 @@ def main():
     parser.add_argument('--other-noise', type=str, help='Path to the raw noise data file of another coil part')
     # add scaling factor, defaulted to 100
     parser.add_argument('--scaling-factor', type=float, default=100, help='Scaling factor for the SNR map')
+    # Add argument to specify the maximum value of the colorbar. No default value.
+    parser.add_argument('--max-colorbar', type=float, help='Maximum value for the colorbar')
     args = parser.parse_args()
 
     fname_image = args.fname_image
@@ -119,7 +121,11 @@ def main():
     snr_rss *= args.scaling_factor
 
     plt.figure()
-    plt.imshow(np.abs(snr_rss), cmap='jet', extent=extent)
+    # display SNR map, and colorbar with max value specified by user, if provided
+    if args.max_colorbar is not None:
+        plt.imshow(np.abs(snr_rss), cmap='jet', extent=extent, vmax=args.max_colorbar)
+    else:
+        plt.imshow(np.abs(snr_rss), cmap='jet', extent=extent)
     plt.title('SNR map from RSS Combination')
     plt.colorbar()
     plt.savefig(f'{fname_image}_snr_rss.png')
