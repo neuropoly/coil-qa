@@ -116,6 +116,7 @@ def main():
     plt.figure()
     # Plot the image with scaled axes
     plt.imshow(img_rss, cmap='gray', extent=extent)
+    plt.axis('off')
     plt.title('Image After RSS Combination')
     plt.colorbar()
     plt.savefig(f'{fname_image}_rss.png')
@@ -132,6 +133,7 @@ def main():
         plt.imshow(np.abs(snr_rss), cmap='jet', extent=extent, vmax=args.max_colorbar)
     else:
         plt.imshow(np.abs(snr_rss), cmap='jet', extent=extent)
+    plt.axis('off')
     plt.title('SNR map from RSS Combination')
     plt.colorbar()
     plt.savefig(f'{fname_image}_snr_rss.png')
