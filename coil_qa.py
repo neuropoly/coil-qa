@@ -24,6 +24,8 @@ def main():
     # add the possibility to specify another set of image and noise data
     parser.add_argument('--other-image', type=str, help='Path to the raw image data file of another coil part')
     parser.add_argument('--other-noise', type=str, help='Path to the raw noise data file of another coil part')
+    # add scaling factor, defaulted to 100
+    parser.add_argument('--scaling-factor', type=float, default=100, help='Scaling factor for the SNR map')
     args = parser.parse_args()
 
     fname_image = args.fname_image
@@ -112,6 +114,9 @@ def main():
 
     # Calculate SNR map
     snr_rss = calculate_snr_rss(img_rss, noise_cov)
+
+    # Multiply by scaling factor
+    snr_rss *= args.scaling_factor
 
     plt.figure()
     plt.imshow(np.abs(snr_rss), cmap='jet', extent=extent)
