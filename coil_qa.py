@@ -28,6 +28,9 @@ def main():
     parser.add_argument('--scaling-factor', type=float, default=100, help='Scaling factor for the SNR map')
     # Add argument to specify the maximum value of the colorbar. No default value.
     parser.add_argument('--max-colorbar', type=float, help='Maximum value for the colorbar')
+    # Add argument to skip every other xtick because they overlap
+    parser.add_argument('--skip-xticks', action='store_true', help='Skip every other xtick')
+
     args = parser.parse_args()
 
     fname_image = args.fname_image
@@ -82,17 +85,20 @@ def main():
 
     # Compute noise statistics
     noise_corr, mean_noise_corr_upper_scaled, noise_cov = compute_noise_stats(meas_noise)
-    print(f' ==> average off-diagonal coupling: {mean_noise_corr_upper_scaled * 100:.2f}%')
+    mean_noise_corr_upper_scaled *= 100  # Convert to percentage
+    print(f' ==> average off-diagonal coupling: {mean_noise_corr_upper_scaled:.2f}%')
 
     # Display noise correlation and covariance matrices
     for matrix, title, fname_suffix in zip([noise_corr, noise_cov], 
-                                           ['Noise Correlation Matrix', 'Noise Covariance Matrix'], 
+                                           [f'Noise Correlation Matrix ({mean_noise_corr_upper_scaled:.2f}%)', 'Noise Covariance Matrix'], 
                                            ['noisecorr', 'noisecov']):
         plt.figure()
         plt.imshow(np.abs(matrix), cmap='jet', interpolation='nearest')
         # change label values so that the index starts at 1
         plt.xticks(np.arange(matrix.shape[0]), np.arange(1, matrix.shape[0] + 1))
         plt.yticks(np.arange(matrix.shape[0]), np.arange(1, matrix.shape[0] + 1))
+        if args.skip_xticks:
+            plt.xticks(np.arange(0, matrix.shape[0], 2), np.arange(1, matrix.shape[0] + 1, 2))
         plt.colorbar()
         plt.title(title)
         plt.savefig(f'{fname_image}_{fname_suffix}.png')
