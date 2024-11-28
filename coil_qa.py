@@ -21,10 +21,15 @@ def main():
     parser = argparse.ArgumentParser(description='Compute SNR, noise correlation, and g-factor maps.')
     parser.add_argument('fname_image', type=str, help='Path to the raw image data file')
     parser.add_argument('fname_noise', type=str, help='Path to the raw noise data file')
+    # add the possibility to specify another set of image and noise data
+    parser.add_argument('--other-image', type=str, help='Path to the raw image data file of another coil part')
+    parser.add_argument('--other-noise', type=str, help='Path to the raw noise data file of another coil part')
     args = parser.parse_args()
 
     fname_image = args.fname_image
     fname_noise = args.fname_noise
+    fname_image2 = args.other_image
+    fname_noise2 = args.other_noise
 
     # Identify which vendor's data is being used
     if fname_image.endswith('.dat'):
@@ -48,10 +53,22 @@ def main():
         # Read GE 'p-file' data
         pfile = Pfile(fname_image)
         metadata = pfile.MetaData()
-
         meas_image = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
         pfile = Pfile(fname_noise)
         meas_noise = pfile.KSpace(0, 0)  # TODO: replace with (nslice, echo)
+        # In case use provided another set of image and noise data, read them
+        if fname_image2 is not None:
+            pfile = Pfile(fname_image2)
+            meas_image2 = pfile.KSpace(0, 0)
+            if fname_noise2 is not None:
+                pfile = Pfile(fname_noise2)
+                meas_noise2 = pfile.KSpace(0, 0)
+            else:
+                # If no noise data is provided, throw an error
+                raise ValueError('Noise data for the second image is missing')
+            # Concatenate the data
+            meas_image = np.concatenate((meas_image, meas_image2), axis=0)
+            meas_noise = np.concatenate((meas_noise, meas_noise2), axis=0)
 
         # Fetch pixel size in mm
         header = pfile.Header()
