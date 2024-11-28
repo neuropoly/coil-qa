@@ -67,8 +67,8 @@ def main():
                 # If no noise data is provided, throw an error
                 raise ValueError('Noise data for the second image is missing')
             # Concatenate the data
-            meas_image = np.concatenate((meas_image, meas_image2), axis=0)
-            meas_noise = np.concatenate((meas_noise, meas_noise2), axis=0)
+            meas_image = np.concatenate((meas_image, meas_image2), axis=2)
+            meas_noise = np.concatenate((meas_noise, meas_noise2), axis=2)
 
         # Fetch pixel size in mm
         header = pfile.Header()
